@@ -4,20 +4,21 @@ const validator = require('validator');
 const {
   createMovie, deleteMovie, getMovies,
 } = require('../controllers/movies');
+const ERR_ANSWERS = require('../utils/err-answers');
 
 const method = (value) => {
   const result = validator.isURL(value);
   if (result) {
     return value;
   }
-  throw new Error('Неправильный формат ссылки');
+  throw new Error(ERR_ANSWERS.NotCorrectEmailError);
 };
 router.get('/', getMovies);
 
 router.delete('/:movieId', celebrate({
   // валидируем параметры
   params: Joi.object().keys({
-    cardId: Joi.string().length(24).hex(),
+    movieId: Joi.string().length(24).hex(),
   }),
 }), deleteMovie);
 

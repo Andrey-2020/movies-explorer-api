@@ -1,6 +1,7 @@
 // models/user.js
 const mongoose = require('mongoose');
 const validator = require('validator');
+const ERR_ANSWERS = require('../utils/err-answers');
 
 const movieSchema = new mongoose.Schema({
   country: {
@@ -32,7 +33,7 @@ const movieSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator: (v) => validator.isURL(v),
-      message: 'link validation failed',
+      message: ERR_ANSWERS.ImageNotUrlError,
     },
   },
   trailer: {
@@ -40,7 +41,7 @@ const movieSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator: (v) => validator.isURL(v),
-      message: 'link validation failed',
+      message: ERR_ANSWERS.TrailerNotUrlError,
     },
   },
   thumbnail: {
@@ -48,7 +49,7 @@ const movieSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator: (v) => validator.isURL(v),
-      message: 'link validation failed',
+      message: ERR_ANSWERS.ThumbnailNotUrlError,
     },
   },
   owner: {
