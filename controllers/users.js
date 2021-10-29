@@ -29,30 +29,23 @@ module.exports.getMeUser = (req, res, next) => {
 
 module.exports.updateUser = (req, res, next) => {
   const { name, email } = req.body;
-  User.findOne({ email })
-    .then((customer) => {
-      if (customer) {
-        throw new Conflict(ERR_ANSWERS.UserEmailExist);
+  User.findByIdAndUpdate(req.user._id, { name, email }, {
+    new: true, // обработчик then получит на вход обновлённую запись
+    runValidators: true, // данные будут валидированы перед изменением
+  })
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError(ERR_ANSWERS.UserNotFoundError);
       }
-      return User.findByIdAndUpdate(req.user._id, { name, email }, {
-        new: true, // обработчик then получит на вход обновлённую запись
-        runValidators: true, // данные будут валидированы перед изменением
-      })
-        .then((user) => {
-          if (!user) {
-            throw new NotFoundError(ERR_ANSWERS.UserNotFoundError);
-          }
-          return res.status(200).send(user);
-        })
-        .catch((err) => {
-          if (err.name === 'CastError' || err.name === 'ValidationError') {
-            next(new BadRequestError(ERR_ANSWERS.BadRequestError));
-          } else {
-            next(err);
-          }
-        });
+      return res.status(200).send(user);
     })
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'CastError' || err.name === 'ValidationError') {
+        next(new BadRequestError(ERR_ANSWERS.BadRequestError));
+      } else {
+        next(err);
+      }
+    });
 };
 
 module.exports.createUser = (req, res, next) => {
