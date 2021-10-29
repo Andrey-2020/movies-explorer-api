@@ -32,7 +32,7 @@ router.post('/', celebrate({
     image: Joi.string().required().custom(method),
     trailer: Joi.string().required().custom(method),
     thumbnail: Joi.string().required().custom(method),
-    movieId: Joi.string().min(1).required(),
+    movieId: Joi.number().min(1).required(),
     nameRU: Joi.string().required(),
     nameEN: Joi.string().required(),
   }),

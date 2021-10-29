@@ -26,21 +26,22 @@ const userSchema = new mongoose.Schema({
     select: false,
   },
 });
-userSchema.statics.findUserByCredentials = function (email, password) {
+userSchema.statics.findUserByCredentials = function findUserByCredentials(email, password, next) {
   return this.findOne({ email }).select('+password')
     .then((user) => {
       if (!user) {
-        return Promise.reject(new Error(ERR_ANSWERS.WrongEmailOrPassword));
+        return Promise.reject(new Error('WrongEmailOrPassword'));
       }
 
       return bcrypt.compare(password, user.password)
         .then((matched) => {
           if (!matched) {
-            return Promise.reject(new Error(ERR_ANSWERS.WrongEmailOrPassword));
+            return Promise.reject(new Error('WrongEmailOrPassword'));
           }
 
           return user; // теперь user доступен
         });
-    });
+    })
+    .catch(next);
 };
 module.exports = mongoose.model('user', userSchema);

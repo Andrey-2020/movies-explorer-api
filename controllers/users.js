@@ -29,57 +29,23 @@ module.exports.getMeUser = (req, res, next) => {
 
 module.exports.updateUser = (req, res, next) => {
   const { name, email } = req.body;
-  User.findByIdAndUpdate(req.user._id, { name, email }, {
-    new: true, // обработчик then получит на вход обновлённую запись
-    runValidators: true, // данные будут валидированы перед изменением
-  })
-    .then((user) => {
-      if (!user) {
-        throw new NotFoundError(ERR_ANSWERS.UserNotFoundError);
-      }
-      return res.status(200).send(user);
-    })
-    .catch((err) => {
-      if (err.name === 'CastError' || err.name === 'ValidationError') {
-        next(new BadRequestError(ERR_ANSWERS.BadRequestError));
-      } else {
-        next(err);
-      }
-    });
-};
-
-module.exports.createUser = (req, res, next) => {
-  const {
-    name, email, password,
-  } = req.body;
   User.findOne({ email })
     .then((customer) => {
       if (customer) {
         throw new Conflict(ERR_ANSWERS.UserEmailExist);
       }
-      return bcrypt.hash(password, 10)
-        .then((hash) => {
-          if (!validator.isEmail(email)) {
-            throw new BadRequestError(ERR_ANSWERS.NotCorrectEmailError);
-          }
-          return User.create({
-            name,
-            email,
-            password: hash, // записываем хеш в базу
-          });
-        })
+      return User.findByIdAndUpdate(req.user._id, { name, email }, {
+        new: true, // обработчик then получит на вход обновлённую запись
+        runValidators: true, // данные будут валидированы перед изменением
+      })
         .then((user) => {
-          res.status(200).send({
-            name: user.name,
-            _id: user._id,
-            email: user.email,
-          });
+          if (!user) {
+            throw new NotFoundError(ERR_ANSWERS.UserNotFoundError);
+          }
+          return res.status(200).send(user);
         })
         .catch((err) => {
-          if (err.name === 'MongoServerError' && err.code === 11000) {
-            next(new Conflict(err.message));
-          }
-          if (err.name === 'ValidationError') {
+          if (err.name === 'CastError' || err.name === 'ValidationError') {
             next(new BadRequestError(ERR_ANSWERS.BadRequestError));
           } else {
             next(err);
@@ -87,6 +53,38 @@ module.exports.createUser = (req, res, next) => {
         });
     })
     .catch(next);
+};
+
+module.exports.createUser = (req, res, next) => {
+  const {
+    name, email, password,
+  } = req.body;
+  if (!validator.isEmail(email)) {
+    throw new BadRequestError(ERR_ANSWERS.NotCorrectEmailError);
+  }
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({
+      name,
+      email,
+      password: hash, // записываем хеш в базу
+    }))
+    .then((user) => {
+      res.status(200).send({
+        name: user.name,
+        _id: user._id,
+        email: user.email,
+      });
+    })
+    .catch((err) => {
+      if (err.name === 'MongoServerError' && err.code === 11000) {
+        next(new Conflict(ERR_ANSWERS.UserEmailExist));
+      }
+      if (err.name === 'ValidationError') {
+        next(new BadRequestError(ERR_ANSWERS.BadRequestError));
+      } else {
+        next(err);
+      }
+    });
 };
 
 module.exports.login = (req, res, next) => {
@@ -97,8 +95,11 @@ module.exports.login = (req, res, next) => {
       const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : JWT_SECRET_DEV);
       res.send({ token });
     })
-    .catch(() => {
-      // ошибка аутентификации UnauthorizedError
-      next(new UnauthorizedError(ERR_ANSWERS.UnauthorizedError));
+    .catch((err) => {
+      if (err.message === 'WrongEmailOrPassword') {
+        next(new UnauthorizedError(ERR_ANSWERS.WrongEmailOrPassword));
+      } else {
+        next(err);
+      }
     });
 };
